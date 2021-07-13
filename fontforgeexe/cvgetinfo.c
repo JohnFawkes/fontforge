@@ -754,7 +754,7 @@ static AnchorClass *_AnchorClassUnused(SplineChar *sc,int *waslig, int classmatc
     /*  or 'mkmk' anchors, which allow a mark to be both a base and an attach */
 
     ismarkglyph = (sc->width==0) || sc->glyph_class==(3+1) ||
-	    ( sc->unicodeenc!=-1 && sc->unicodeenc<0x10000 && iscombining(sc->unicodeenc)) ||
+	    ( sc->unicodeenc!=-1 && iscombining(sc->unicodeenc)) ||
 	    ( sc->anchor!=NULL && (sc->anchor->type == at_mark || sc->anchor->type == at_basemark));
     for ( pst = sc->possub; pst!=NULL && pst->type!=pst_ligature; pst=pst->next );
     isligatureglyph = (pst!=NULL) || sc->glyph_class==2+1;
@@ -814,8 +814,8 @@ return(NULL);
 	ap->type = at_cexit;
     else if ( waslig==-3 || an->type==act_curs )
 	ap->type = at_centry;
-    else if (( sc->unicodeenc!=-1 && sc->unicodeenc<0x10000 &&
-	    iscombining(sc->unicodeenc)) || sc->width==0 || sc->glyph_class==(3+1) /* mark class+1 */)
+    else if (( sc->unicodeenc!=-1 && iscombining(sc->unicodeenc)) ||
+	    sc->width==0 || sc->glyph_class==(3+1) /* mark class+1 */)
 	ap->type = at_mark;
     else if ( an->type==act_mkmk )
 	ap->type = at_basemark;
@@ -1190,8 +1190,7 @@ return( true );			/* No op */
 	    PST *pst;
 	    for ( pst = ci->sc->possub; pst!=NULL && pst->type!=pst_ligature; pst=pst->next );
 	    if (ci->sc->glyph_class==3+1 ||
-		    (ci->sc->unicodeenc!=-1 && ci->sc->unicodeenc<0x10000 &&
-		    iscombining(ci->sc->unicodeenc)))
+		    (ci->sc->unicodeenc!=-1 && iscombining(ci->sc->unicodeenc)))
 		ntype = at_mark;
 	    else if (( pst!=NULL || ci->sc->glyph_class==2+1 ) && an->type==act_mklg )
 		ntype = at_baselig;
@@ -2197,14 +2196,12 @@ static int PI_InterpChanged(GGadget *g, GEvent *e) {
 		    cursp->nextcp.x = rint((n->me.x+cursp->me.x)/2);
 		    cursp->nextcp.y = rint((n->me.y+cursp->me.y)/2);
 		    n->prevcp = cursp->nextcp;
-		    cursp->nonextcp = n->noprevcp = false;
 		}
 		if ( cursp->noprevcp && cursp->prev ) {
 		    SplinePoint *p = cursp->prev->from;
 		    cursp->prevcp.x = rint((p->me.x+cursp->me.x)/2);
 		    cursp->prevcp.y = rint((p->me.y+cursp->me.y)/2);
 		    p->nextcp = cursp->prevcp;
-		    cursp->noprevcp = p->nonextcp = false;
 		}
 		cursp->me.x = (cursp->nextcp.x + cursp->prevcp.x)/2;
 		cursp->me.y = (cursp->nextcp.y + cursp->prevcp.y)/2;
@@ -2323,7 +2320,6 @@ return( true );
 	}
 	cursp->nextcp.x += dx;
 	cursp->nextcp.y += dy;
-	cursp->nonextcp = false;
 	SplineSetSpirosClear(ci->curspl);
 	ci->nextchanged = true;
 	if (( dx>.1 || dx<-.1 || dy>.1 || dy<-.1 ) && cursp->nextcpdef ) {
@@ -2400,7 +2396,6 @@ return( true );
 	}
 	cursp->prevcp.x += dx;
 	cursp->prevcp.y += dy;
-	cursp->noprevcp = false;
 	ci->prevchanged = true;
 	SplineSetSpirosClear(ci->curspl);
 	if (( dx>.1 || dx<-.1 || dy>.1 || dy<-.1 ) && cursp->prevcpdef ) {

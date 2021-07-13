@@ -2049,17 +2049,13 @@ static SplineChar *MakeSmallCapName(char *buffer, int bufsize, SplineFont *sf,
     const char *ext;
     int lower;
 
-    if ( sc->unicodeenc>=0 && sc->unicodeenc<0x10000 ) {
-	lower = tolower(sc->unicodeenc);
-	ext = isupper(sc->unicodeenc) ? genchange->extension_for_letters :
-	      islower(sc->unicodeenc) ? genchange->extension_for_letters :
-		sc->unicodeenc==0xdf  ? genchange->extension_for_letters :
-		sc->unicodeenc>=0xfb00 && sc->unicodeenc<=0xfb06 ? genchange->extension_for_letters :
-					    genchange->extension_for_symbols;
-    } else {
-	lower = sc->unicodeenc;
-	ext = genchange->extension_for_symbols;
-    }
+    lower = tolower(sc->unicodeenc);
+    ext = isupper(sc->unicodeenc) ? genchange->extension_for_letters :
+	  islower(sc->unicodeenc) ? genchange->extension_for_letters :
+	  sc->unicodeenc==0xdf  ? genchange->extension_for_letters :
+	  sc->unicodeenc>=0xfb00 && sc->unicodeenc<=0xfb06 ? genchange->extension_for_letters :
+		genchange->extension_for_symbols;
+
     lc_sc = SFGetChar(sf,lower,NULL);
     if ( lc_sc!=NULL ) {
 	// The Turkish dotted İ must be special cased because it rightly lowercases to the regular ASCII
@@ -2659,9 +2655,8 @@ return;		/* Can't randomly add things to a CID keyed font */
 
     for ( enc=0; enc<fv->map->enccount; ++enc ) {
 	if ( (gid=fv->map->map[enc])!=-1 && fv->selected[enc] && (sc=sf->glyphs[gid])!=NULL ) {
-	    if ( genchange->do_smallcap_symbols || ( sc->unicodeenc<0x10000 &&
-		    (isupper(sc->unicodeenc) || islower(sc->unicodeenc) ||
-		     (sc->unicodeenc>=0xfb00 && sc->unicodeenc<=0xfb06)) )) {
+	    if ( genchange->do_smallcap_symbols || isupper(sc->unicodeenc) ||
+		     islower(sc->unicodeenc) || (sc->unicodeenc>=0xfb00 && sc->unicodeenc<=0xfb06) ) {
 		uint32 script = SCScriptFromUnicode(sc);
 		if ( script==CHR('l','a','t','n'))
 		    ++ltn, ++cnt;
@@ -2687,16 +2682,15 @@ return;
 	_("Building small capitals"),NULL,cnt,1);
     for ( enc=0; enc<fv->map->enccount; ++enc ) {
 	if ( (gid=fv->map->map[enc])!=-1 && fv->selected[enc] && (sc=sf->glyphs[gid])!=NULL ) {
-	    if ( genchange->do_smallcap_symbols || ( sc->unicodeenc<0x10000 &&
-		    (isupper(sc->unicodeenc) || islower(sc->unicodeenc) ||
-		     (sc->unicodeenc>=0xfb00 && sc->unicodeenc<=0xfb06)) )) {
+	    if ( genchange->do_smallcap_symbols || isupper(sc->unicodeenc) ||
+		     islower(sc->unicodeenc) || (sc->unicodeenc>=0xfb00 && sc->unicodeenc<=0xfb06) ) {
 		uint32 script = SCScriptFromUnicode(sc);
 		if ( script!=CHR('l','a','t','n') &&
 			script!=CHR('g','r','e','k') &&
 			script!=CHR('c','y','r','l') &&
 			!genchange->do_smallcap_symbols )
     continue;
-		if ( sc->unicodeenc<0x10000 && islower(sc->unicodeenc)) {
+		if ( islower(sc->unicodeenc)) {
 		    sc = SFGetChar(sf,toupper(sc->unicodeenc),NULL);
 		    if ( sc==NULL )
       goto end_loop;
@@ -2727,16 +2721,15 @@ return;
     /*  look at things which depend on references */
     for ( enc=0; enc<fv->map->enccount; ++enc ) {
 	if ( (gid=fv->map->map[enc])!=-1 && fv->selected[enc] && (sc=sf->glyphs[gid])!=NULL ) {
-	    if ( genchange->do_smallcap_symbols || ( sc->unicodeenc<0x10000 &&
-		    (isupper(sc->unicodeenc) || islower(sc->unicodeenc) ||
-		     (sc->unicodeenc>=0xfb00 && sc->unicodeenc<=0xfb06)) )) {
+	    if ( genchange->do_smallcap_symbols || isupper(sc->unicodeenc) ||
+		     islower(sc->unicodeenc) || (sc->unicodeenc>=0xfb00 && sc->unicodeenc<=0xfb06) ) {
 		uint32 script = SCScriptFromUnicode(sc);
 		if ( script!=CHR('l','a','t','n') &&
 			script!=CHR('g','r','e','k') &&
 			script!=CHR('c','y','r','l') &&
 			!genchange->do_smallcap_symbols )
     continue;
-		if ( sc->unicodeenc<0x10000 &&islower(sc->unicodeenc)) {
+		if (islower(sc->unicodeenc)) {
 		    sc = SFGetChar(sf,toupper(sc->unicodeenc),NULL);
 		    if ( sc==NULL )
       goto end_loop2;
@@ -3235,7 +3228,7 @@ static void PerGlyphFindCounters(struct counterinfo *ci,SplineChar *sc, int laye
     ci->sc = sc;
     ci->layer = layer;
     ci->bottom_y = 0;
-    if ( sc->unicodeenc!=-1 && sc->unicodeenc<0x10000 && isupper(sc->unicodeenc))
+    if ( sc->unicodeenc!=-1 && isupper(sc->unicodeenc))
 	ci->top_y = ci->bd.caph>0?ci->bd.caph:4*sc->parent->ascent/5;
     else
 	ci->top_y = ci->bd.xheight>0?ci->bd.xheight:sc->parent->ascent/2;
@@ -4273,7 +4266,7 @@ static void PerGlyphInit(SplineChar *sc, struct lcg_zones *zones,
 	    zones->bottom_zone = b.maxy/3;
 	    zones->top_zone = 2*b.maxy/3;
 	    zones->top_bound = b.maxy;
-	} else if ( sc->unicodeenc!=-1 && sc->unicodeenc<0x10000 && islower(sc->unicodeenc)) {
+	} else if ( sc->unicodeenc!=-1 && islower(sc->unicodeenc)) {
 	    if ( zones->bd.xheight<=0 )
 		zones->bd.xheight = SearchBlues(sc->parent,'x',0);
 	    zones->bottom_zone = zones->bd.xheight>0 ? zones->bd.xheight/3 :
@@ -4285,7 +4278,7 @@ static void PerGlyphInit(SplineChar *sc, struct lcg_zones *zones,
 	    zones->top_bound = zones->bd.xheight>0 ? zones->bd.xheight :
 			    zones->bd.caph>0 ? 2*zones->bd.caph/3 :
 			    (sc->parent->ascent/2);
-	} else if ( sc->unicodeenc!=-1 && sc->unicodeenc<0x10000 && isupper(sc->unicodeenc)) {
+	} else if ( sc->unicodeenc!=-1 && isupper(sc->unicodeenc)) {
 	    if ( zones->bd.caph<0 )
 		zones->bd.caph = SearchBlues(sc->parent,'I',0);
 	    zones->bottom_zone = zones->bd.caph>0 ? zones->bd.caph/3 :
@@ -4399,10 +4392,8 @@ static int FigureCase(SplineChar *sc) {
     int uni;
     int smallcaps = false;
 
-    if ( sc->unicodeenc<0x10000 && sc->unicodeenc!=-1 )
+    if ( sc->unicodeenc!=-1 )
 return( islower(sc->unicodeenc) ? cs_lc : isupper(sc->unicodeenc) ? cs_uc : cs_neither );
-    else if ( sc->unicodeenc!=-1 )
-return( cs_neither );
 
     under = strchr(sc->name,'_');
     dot   = strchr(sc->name,'.');
@@ -4415,7 +4406,7 @@ return( cs_neither );
     ch = *dot; *dot = '\0';
     uni = UniFromName(sc->name,ui_none,&custom);
     *dot = ch;
-    if ( uni==-1 || uni>=0x10000 )
+    if ( uni==-1 )
 return( cs_neither );
 
     if ( smallcaps && (islower(uni) || isupper(uni)) )
@@ -4651,12 +4642,10 @@ static SplineSet *MakeBottomItalicSerif(double stemwidth,double endx,
 	    ++i;
 	} else {
 	    InterpBp(&last->nextcp,i,xscale,yscale,interp,endx,normal,bold);
-	    last->nonextcp = false;
 	    i+=2;
 	    InterpBp(&bp,i,xscale,yscale,interp,endx,normal,bold);
 	    cur = SplinePointCreate(bp.x,bp.y);
 	    InterpBp(&cur->prevcp,i-1,xscale,yscale,interp,endx,normal,bold);
-	    cur->noprevcp = false;
 	    SplineMake3(last,cur);
 	    ++i;
 	}
@@ -5185,7 +5174,12 @@ static void SerifRemove(SplinePoint *start,SplinePoint *end,SplineSet *ss) {
 	SplineFree(spnext->prev);
     }
     start->next = end->prev = NULL;
+    start->nextcp = start->me;
+    // The following is probably unneeded but restores the
+    // state of each now-open contour to what it would be when
+    // points are allocated with SplinePointCreate()
     start->nonextcp = end->noprevcp = true;
+    end->prevcp = end->me;
 }
 
 static SplinePoint *StemMoveBottomEndTo(SplinePoint *sp,double y,int is_start) {
@@ -5200,7 +5194,6 @@ static SplinePoint *StemMoveBottomEndTo(SplinePoint *sp,double y,int is_start) {
 	    SplineRefigure(sp->prev);
 	} else {
 	    other = SplinePointCreate(sp->me.x,y);
-	    sp->nonextcp = true;
 	    SplineMake(sp,other,sp->prev->order2);
 	    sp = other;
 	}
@@ -5238,7 +5231,6 @@ static SplinePoint *StemMoveDBottomEndTo(SplinePoint *sp,double y,DStemInfo *d,
 	    SplineRefigure(sp->prev);
 	} else {
 	    other = SplinePointCreate(sp->me.x+xoff,y);
-	    sp->nonextcp = true;
 	    SplineMake(sp,other,sp->prev->order2);
 	    sp = other;
 	}
@@ -5352,7 +5344,8 @@ return;
     if ( ii->secondary_serif == srf_flat ) {
 	start = StemMoveBottomEndTo(start,y,true);
 	end = StemMoveBottomEndTo(end,y,false);
-	start->nonextcp = end->noprevcp = true;
+	start->nextcp = start->me;
+	end->prevcp = end->me;
 	SplineMake(start,end,sc->layers[layer].order2);
     } else if ( ii->secondary_serif == srf_simpleslant ) {
 	if ( ii->tan_ia<0 ) {
@@ -5362,7 +5355,8 @@ return;
 	    start = StemMoveBottomEndTo(start,y,true);
 	    end = StemMoveBottomEndTo(end,y - (end->me.x-start->me.x)*ii->tan_ia,false);
 	}
-	start->nonextcp = end->noprevcp = true;
+	start->nextcp = start->me;
+	end->prevcp = end->me;
 	SplineMake(start,end,sc->layers[layer].order2);
     } else {
 	if ( ii->tan_ia<0 ) {
@@ -5374,7 +5368,8 @@ return;
 	    end = StemMoveBottomEndTo(end,y- .8*(end->me.x-start->me.x)*ii->tan_ia,false);
 	    mid = SplinePointCreate(.2*end->me.x+.8*start->me.x,y);
 	}
-	start->nonextcp = end->noprevcp = true;
+	start->nextcp = start->me;
+	end->prevcp = end->me;
 	mid->pointtype = pt_corner;
 	SplineMake(start,mid,sc->layers[layer].order2);
 	SplineMake(mid,end,sc->layers[layer].order2);
@@ -5523,7 +5518,6 @@ static SplinePoint *StemMoveTopEndTo(SplinePoint *sp,double y,int is_start) {
 	    SplineRefigure(sp->prev);
 	} else {
 	    other = SplinePointCreate(sp->me.x,y);
-	    sp->nonextcp = true;
 	    SplineMake(sp,other,sp->prev->order2);
 	    sp = other;
 	}
@@ -5536,7 +5530,6 @@ static SplinePoint *StemMoveTopEndTo(SplinePoint *sp,double y,int is_start) {
 	    SplineRefigure(sp->next);
 	} else {
 	    other = SplinePointCreate(sp->me.x,y);
-	    sp->noprevcp = true;
 	    SplineMake(other,sp,sp->next->order2);
 	    sp = other;
 	}
@@ -5552,12 +5545,10 @@ static SplinePoint *StemMoveDTopEndTo(SplinePoint *sp,double y,DStemInfo *d,
     xoff = (y-sp->me.y)*d->unit.x/d->unit.y;
     if ( is_start ) {
 	other = SplinePointCreate(sp->me.x+xoff,y);
-	sp->nonextcp = true;
 	SplineMake(sp,other,sp->prev->order2);
 	sp = other;
     } else {
 	other = SplinePointCreate(sp->me.x+xoff,y);
-	sp->noprevcp = true;
 	SplineMake(other,sp,sp->next->order2);
 	sp = other;
     }
@@ -5875,7 +5866,8 @@ return;
 
     start = StemMoveBottomEndTo(start,y,true);
     end = StemMoveBottomEndTo(end,y,false);
-    start->nonextcp = end->noprevcp = true;
+    start->nextcp = start->me;
+    end->prevcp = end->me;
     SplineMake(start,end,sc->layers[layer].order2);
     start->pointtype = end->pointtype = pt_corner;
 }
@@ -6317,7 +6309,7 @@ static void FBottomGrows(SplineChar *sc,int layer,ItalicInfo *ii) {
 		sp = SplinePointCreate(start->me.x,start->me.y+ii->pq_depth);
 		sp->next = start->next;
 		sp->next->from = sp;
-		start->nonextcp = true;
+		start->nextcp = start->me;
 		SplineMake(start,sp,sc->layers[layer].order2);
 		start = sp;
 	    } else {
@@ -6328,7 +6320,7 @@ static void FBottomGrows(SplineChar *sc,int layer,ItalicInfo *ii) {
 		sp = SplinePointCreate(end->me.x,end->me.y+ii->pq_depth);
 		sp->prev = start->prev;
 		sp->prev->to = sp;
-		end->noprevcp = true;
+		end->prevcp = end->me;
 		SplineMake(sp,end,sc->layers[layer].order2);
 		end = sp;
 	    } else {
@@ -6538,7 +6530,8 @@ return;
 	end   = ltemp;
     }
     SerifRemove(start,end,sses[0]);
-    start->nonextcp = end->noprevcp = true;
+    start->nextcp = start->me;
+    end->prevcp = end->me;
     SplineMake(start,end,sc->layers[layer].order2);
  if ( sc->layers[layer].order2 )
   SSCPValidate(sses[0]);
